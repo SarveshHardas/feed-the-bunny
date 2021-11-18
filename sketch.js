@@ -1,152 +1,179 @@
-const Engine = Matter.Engine;
-const Render = Matter.Render;
-const World = Matter.World;
-const Bodies = Matter.Bodies;
-const Constraint = Matter.Constraint;
-const Body = Matter.Body;
-const Composites = Matter.Composites;
-const Composite = Matter.Composite;
+var score =0;
+var gun,bluebubble,redbubble, bullet, backBoard;
 
-let engine;
-let world;
+var gunImg,bubbleImg, bulletImg, blastImg, backBoardImg;
 
-function preload()
-{
-  bgImg=loadImage("background.png");
-  bubbleImg=loadImage("bubble.png");
-  wMelon=loadImage("melon.png");
-  rabbitImg=loadImage("Rabbit-01.png");
-  blinkAni = loadAnimation("blink_1.png","blink_2.png","blink_3.png");
-  eatAni = loadAnimation("eat_0.png","eat_1.png","eat_2.png","eat_3.png","eat_4.png");
-  sadAni = loadAnimation("sad_1.png","sad_2.png","sad_3.png");
-  melonB=loadImage("melonBubble.png")
+var redBubbleGroup, redBubbleGroup, bulletGroup;
 
-  blinkAni.playing = true;
-  eatAni.playing = true;
-  sadAni.playing = true;
 
-  sadAni.looping = false;
-  eatAni.looping = false;
+var life =3;
+var score=0;
+var gameState=1
+
+function preload(){
+  gunImg = loadImage("gun1.png");
+  blastImg = loadImage("blast.png");
+  bulletImg = loadImage("bullet1.png");
+  blueBubbleImg = loadImage("waterBubble.png");
+  redBubbleImg = loadImage("redbubble.png");
+  backBoardImg= loadImage("back.jpg");
+  shtImg = loadImage("sht.png")
 }
-
 function setup() {
-  createCanvas(800,600);
-  engine = Engine.create();
-  world = engine.world;
-  //createSprite(400, 200, 50, 50);
-  ground = new Ground(400,550,800,10)
-  shelf = new Ground(350,189,100,20)
-  rope1 = new  Rope(4,{x:190,y:250})
-  rope2 = new  Rope(4,{x:50,y:300})
-  fruit=Bodies.circle(200,500,15,{density:0.001})
-  World.add(world,fruit)
+  createCanvas(800, 600);
 
-  fruit1_con = new Link(rope1,fruit);
-  fruit2_con = new Link(rope2,fruit);
+  backBoard= createSprite(50, width/2, 100,height);
+  backBoard.addImage(backBoardImg)
+  
+  gun= createSprite(100, height/2, 50,50);
+  gun.addImage(gunImg)
+  gun.scale=0.2;
 
-  bunny = createSprite(320,100,100,100)
-  bunny.addAnimation("blinking",blinkAni);
-  bunny.addAnimation("eating",eatAni);
-  bunny.addAnimation("crying",sadAni);
-  bunny.changeAnimation("blinking");
-  bunny.scale=0.25;
+  button1 =createImg("sht.png") 
+  button1.position(180,500)
+  button1.size(100,100)
 
-  bubble=createSprite(300,400,20,20);
-  bubble.addImage("bubble",bubbleImg);
-  bubble.addImage("melon",melonB)
-  bubble.scale=0.08;
+  button1.mouseClicked(fire);
 
-  button1 =createImg("cut_btn.png") 
-  button1.position(180,250)
-  button1.size(50,50)
-
-  button2 =createImg("cut_btn.png") 
-  button2.position(50,300)
-  button2.size(50,50)
-
-  button1.mouseClicked(drop1);
-  button2.mouseClicked(drop2);
-
+  bulletGroup = createGroup();   
+  blueBubbleGroup = createGroup();   
+  redBubbleGroup = createGroup();   
+  
+  heading= createElement("h1");
+  scoreboard= createElement("h1");
 }
 
 function draw() {
-  background(bgImg);  
-  Engine.update(engine);
-  shelf.display();
-  rope1.show();
-  rope2.show();
-  bunny.changeAnimation("blinking")
-  if(fruit!=null && fruit!=bubbleCollide)
- {
-    image(wMelon,fruit.position.x,fruit.position.y,60,60)
- } 
+  background("#BDA297");
+  
+  heading.html("Life: "+life)
+  heading.style('color:red'); 
+  heading.position(150,20)
 
- if(bubbleCollide(fruit,bubble))
- {
-   bubble.x=800;
-   bubble.y=600;
-   up();
- }
+  scoreboard.html("Score: "+score)
+  scoreboard.style('color:red'); 
+  scoreboard.position(width-200,20)
 
- if(collide(fruit,bunny,80)===true)
- {
-   rope1.break();
-   bubble.visible = false;
-   bunny.changeAnimation('eating');
- }
- 
-  drawSprites();
-}
+  if(gameState===1){
+    gun.y=mouseY  
 
-function collide(body,sprite)
-{
-  if(body!=null)
-  {
-    var d = dist(body.position.x,body.position.y,sprite.position.x,sprite.position.y)
-    if(d <= 80)
-    {
-      World.remove(world,fruit);
-      fruit=null;
-
-      return true
-    }else{
-      return false
+    if (frameCount % 80 === 0) {
+      drawblueBubble();
     }
-  }
-}
 
-function bubbleCollide()
-{
-  body=fruit;
-  sprite=bubble;
-  if(body!=null)
-  {
-    var d = dist(body.position.x,body.position.y,sprite.position.x,sprite.position.y)
-    if(d <= 80)
-    {
-      image(melonB,fruit.position.x,fruit.position.y,60,60)
-      bubble.visible=false;
-      return true
-    }else{
-      return false
+    if (frameCount % 100 === 0) {
+      drawredBubble();
     }
+  
+    if(keyDown("space")){
+      shootBullet();
+    }
+    if (blueBubbleGroup.collide(backBoard)){
+      handleGameover(blueBubbleGroup);
+    }
+    
+    if (redBubbleGroup.collide(backBoard)) {
+      handleGameover(redBubbleGroup);
+    }
+    
+    /*if(blueBubbleGroup.(bulletGroup)){
+      handleBubbleCollision(blueBubbleGroup);
+    }*/
+
+    /*if(blueBubbleGroup.collide(bulletGroup)){
+      handleBubbleCollision();
+    }*/
+    
+    /*if(blueBubbleGroup.collide()){
+      handleBubbleCollision(blueBubbleGroup);
+    }*/
+    
+    if(blueBubbleGroup.collide(bulletGroup)){
+      handleBubbleCollision(blueBubbleGroup);
+    }
+
+    if(redBubbleGroup.collide(bulletGroup)){
+      handleBubbleCollision(redBubbleGroup);
+    }
+
+    drawSprites();
   }
+    
+  
 }
 
-function drop1()
-{
-  rope1.break();
-  fruit1_con.detach();
-  fruit1_con=null;
-} 
-function drop2()
-{
-  rope2.break();
-  fruit2_con.detach();
-  fruit2_con=null;
-} 
+function drawblueBubble(){
+  bluebubble = createSprite(800,random(20,580),40,40);
+  bluebubble.addImage(blueBubbleImg);
+  bluebubble.scale = 0.1;
+  bluebubble.velocityX = -8;
+  bluebubble.lifetime = 400;
+  blueBubbleGroup.add(bluebubble);
+}
+function drawredBubble(){
+  redbubble = createSprite(800,random(20,580),40,40);
+  redbubble.addImage(redBubbleImg);
+  redbubble.scale = 0.1;
+  redbubble.velocityX = -8;
+  redbubble.lifetime = 400;
+  redBubbleGroup.add(redbubble);
+}
 
-function up()
+function shootBullet(){
+  bullet= createSprite(150, width/2, 50,20)
+  bullet.y= gun.y-20
+  bullet.addImage(bulletImg)
+  bullet.scale=0.12
+  bullet.velocityX= 7
+  bulletGroup.add(bullet)
+}
+
+function handleBubbleCollision(bubbleGroup){
+    if (life > 0) {
+       score=score+1;
+    }
+
+    blast= createSprite(bullet.x+60, bullet.y, 50,50);
+    blast.addImage(blastImg) 
+
+    /* blast= sprite(bullet.x+60, bullet.y, 50,50);
+    blast.addImage(blastImg) */
+
+    /* blast= createSprite(bullet.x+60, bullet.y, 50,50);
+    blast.add(blastImg) */
+
+    /* blast= createSprite(bullet.x+60, bullet.y, 50,50);
+    image(blastImg) */
+    
+    blast.scale=0.3
+    blast.life=20
+    bulletGroup.destroyEach()
+    bubbleGroup.destroyEach()
+}
+
+function handleGameover(bubbleGroup){
+  
+    life=life-1;
+    bubbleGroup.destroyEach();
+    
+
+    if (life === 0) {
+      gameState=2
+      
+      swal({
+        title: `Game Over`,
+        text: "Oops you lost the game....!!!",
+        text: "Your Score is " + score,
+        imageUrl:
+          "https://cdn.shopify.com/s/files/1/1061/1924/products/Thumbs_Down_Sign_Emoji_Icon_ios10_grande.png",
+        imageSize: "100x100",
+        confirmButtonText: "Thanks For Playing"
+      });
+    }
+  
+}
+
+function fire()
 {
-  Body.applyForce(fruit,{x:0,y:0},{x:0,y:-0.09})
+  shootBullet();
 }
